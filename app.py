@@ -127,6 +127,9 @@ def get_mural_data():
     # they are not available for viewing
     popup_list = []
     put_on_reserve_list = []
+    favored_image_found_list = []
+    artist_found_list = []
+    mural_gone_list = []
     # We can conveniently use all the links we just gathered to visit pages one by one
     # but we will need their index to match things like thier name
     for ix, mural_page in enumerate(mural_links):
@@ -151,6 +154,7 @@ def get_mural_data():
         artist_found = False
         artist_name = None
         artist_link = None
+        favored_image_name = None
         # If no Wiki tags were found, the for loop will be skipped
         for page_tag in page_tags: #page_tag is a Beautiful Soup object, with many helpful featuers
             tag_text = page_tag.text  # a convenient Beautiful Soup attribute 
@@ -158,9 +162,9 @@ def get_mural_data():
                 favored_image_name = tag_text[10:] # What follows the prefix should be a name
                 if favored_image_name is not None:
                     use_favored_image = True
-            if tag_text[0:21] == 'not currently visible':
+            if tag_text[0:21].lower() == 'not currently visible':
                     mural_not_visible = True
-            if tag_text[0:6] == 'artist':
+            if tag_text[0:6].lower() == 'artist':
                 artist_name = tag_text[7:].lstrip().rstrip()
                 if artist_name is not None:
                     artist_found = True
@@ -223,6 +227,10 @@ def get_mural_data():
         popup_text_string += f'<a href="{mural_page}" target="blank">More info&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
         popup_text_string += f'</a><a href="{link_for_img_info}" target="blank">Larger image</a>'
         popup_list.append(popup_text_string)
+        # Finally, include info for tracking
+        favored_image_found_list.append(favored_image_name)
+        artist_found_list.append(artist_name)
+        mural_gone_list.append(mural_not_visible)
     # This ends our big for loop (visitng all pages to get info)
     
     # For test purposes only, append blank values to popup_list
