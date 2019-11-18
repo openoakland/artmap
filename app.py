@@ -133,7 +133,7 @@ def get_mural_data():
         # Grab page data
         page_data = requests.get(mural_page).text
         # Deliberately slow down the process so as not to overwhelm LocalWiki with requests
-        time.sleep(0.5)
+        time.sleep(0.2)
         print(f'Getting page {ix}')
         # BeautifulSoup will take the page data and parse it very conveniently for us
         soup = BeautifulSoup(page_data, 'html.parser')
@@ -154,7 +154,7 @@ def get_mural_data():
         # If no Wiki tags were found, the for loop will be skipped
         for page_tag in page_tags: #page_tag is a Beautiful Soup object, with many helpful featuers
             tag_text = page_tag.text  # a convenient Beautiful Soup attribute 
-            if tag_text[0:9].lower() == 'oam_uses_':  # Check for the special OAM prefix, ignoring case
+            if tag_text[0:13].lower() == 'photo_display':  # Check for the special OAM prefix, ignoring case
                 favored_image_name = tag_text[10:] # What follows the prefix should be a name
                 if favored_image_name is not None:
                     use_favored_image = True
@@ -217,7 +217,7 @@ def get_mural_data():
             else:  # artist found, but no link found
                 popup_text_string += f'by {artist_name}<br>'
         else:   # artist not found 
-            popup_text_string += f'Help us <a href="https://andrewguenthner.com/help-oakland-art-murmur-identify-mural-artists/" target="blank">give credit</a> to the artist.<br>'
+            popup_text_string += f'Help us <a href="https://oaklandartmurmur.org/help-oakland-art-murmur-identify-mural-artists/" target="blank">give credit</a> to the artist.<br>'
         popup_text_string += f'<a href="{link_for_img_info}" target="blank">'
         popup_text_string += f'<img src="{link_for_image}"></a><br>'
         popup_text_string += f'<a href="{mural_page}" target="blank">More info&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
@@ -231,7 +231,6 @@ def get_mural_data():
     if popup_list_missing_length > 0:
         for _ in range(popup_list_missing_length):
             popup_list.append('not collected')
-    
 
     # Now, take these lists and make a Pandas DataFrame
     # The coordinates need to be in two colums called 'latitude' and 
@@ -252,7 +251,7 @@ def get_mural_data():
     # First, get the list length
     list_length = len(mural_names)
     # Generate a list of each number starting at 101
-    id_list = [num for num in range(707,707+list_length)]
+    id_list = [num for num in range(101,101+list_length)]
     # Now, add the list to the DataFrame
     mural_df['id'] = id_list
 
@@ -289,6 +288,17 @@ def get_mural_data():
     # generate 17 if put_on_reserve_list is False or 21 if True
     map_list = [17 + 4 * int(list_item) for list_item in put_on_reserve_list]
     mural_df['maps'] = map_list 
+
+    # Create a new DataFrame for tracking purposes -- use .copy() so that original
+    # data is not modified
+    tracking_df = mural_df.copy()
+    # Add the tracking info to this DataFrame
+    tracking_df['specific_image_name'] = favored_image_found_list
+    tracking_df['artist_name'] = artist_found_list
+    tracking_df['mural_removal_confirmed'] = mural_gone_list
+    # Save the tracking DataFrame
+    tracking_df.to_csv('mural_tracker.csv')
+
     # For custom murals that do not appear on the scraped list but that we want to add,
     # we will import a csv with all the right colums
     try:
@@ -303,11 +313,11 @@ def get_mural_data():
     # we just made
     list_of_dicts_for_reserve = []
     temp_dict = dict()   # Empty temporary dict to append to list
-    for num in range (706+len(mural_df),1601):
+    for num in range(101+len(mural_df),1001):
         temp_dict['name'] = 'reserved'
         temp_dict['latitude'] = 37.8   # This is a stand-in for Oakland
         temp_dict['longitude'] = -122.4  # This puts the marker safely out to sea so no one sees it by accident
-        temp_dict['id'] = num
+        temp_dict['id'] = int(num)
         temp_dict['address'] = 'Oakland, CA'
         temp_dict['zoom'] = 13
         temp_dict['icon'] = 'art_blank_t.png'
@@ -335,8 +345,5 @@ def get_mural_data():
 
 
     
-
-
-
 if __name__ == '__main__':
     app.run()
